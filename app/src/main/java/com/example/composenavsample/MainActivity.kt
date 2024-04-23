@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val naviController = rememberNavController()
-                    naviLayout(naviController)
+                    NavLayout(naviController)
                 }
             }
         }

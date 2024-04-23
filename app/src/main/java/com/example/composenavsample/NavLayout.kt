@@ -63,6 +63,11 @@ enum class TopLevelDestination(
     ),
 }
 
+enum class OtherDestination(val route: String) {
+    Search(route = "Search"),
+    Settings(route = "Settings"),
+}
+
 fun NavController.navigateToHome(navOptions: NavOptions) =
     navigate(TopLevelDestination.Home.route, navOptions)
 
@@ -71,6 +76,12 @@ fun NavController.navigateToShoppingCart(navOptions: NavOptions) =
 
 fun NavController.navigateToPerson(navOptions: NavOptions) =
     navigate(TopLevelDestination.Person.route, navOptions)
+
+fun NavController.navigateToSearch() =
+    navigate(OtherDestination.Search.route)
+
+fun NavController.navigateToSettings() =
+    navigate(OtherDestination.Settings.route)
 
 fun NavGraphBuilder.homeScreen() {
     composable(route = TopLevelDestination.Home.route) {
@@ -90,15 +101,27 @@ fun NavGraphBuilder.personScreen() {
     }
 }
 
+fun NavGraphBuilder.searchScreen() {
+    composable(route = OtherDestination.Search.route) {
+        Greeting(name = "Search")
+    }
+}
+
+fun NavGraphBuilder.settingsScreen() {
+    composable(route = OtherDestination.Settings.route) {
+        Greeting(name = "Settings")
+    }
+}
+
 fun navigateToTopLevelDestination(
-    naviController: NavHostController,
+    navController: NavHostController,
     topLevelDestination: TopLevelDestination
 ) {
     val topLevelNavOptions = navOptions {
         // Pop up to the start destination of the graph to
         // avoid building up a large stack of destinations
         // on the back stack as users select items
-        popUpTo(naviController.graph.findStartDestination().id) {
+        popUpTo(navController.graph.findStartDestination().id) {
             saveState = true
         }
         // Avoid multiple copies of the same destination when
@@ -109,26 +132,26 @@ fun navigateToTopLevelDestination(
     }
 
     when (topLevelDestination) {
-        TopLevelDestination.Home -> naviController.navigateToHome(topLevelNavOptions)
-        TopLevelDestination.ShoppingCart -> naviController.navigateToShoppingCart(topLevelNavOptions)
-        TopLevelDestination.Person -> naviController.navigateToPerson(topLevelNavOptions)
+        TopLevelDestination.Home -> navController.navigateToHome(topLevelNavOptions)
+        TopLevelDestination.ShoppingCart -> navController.navigateToShoppingCart(topLevelNavOptions)
+        TopLevelDestination.Person -> navController.navigateToPerson(topLevelNavOptions)
     }
 }
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun naviLayout(naviController: NavHostController) {
+fun NavLayout(navController: NavHostController) {
     Scaffold(
         modifier = Modifier,
-        bottomBar = { naviBottomBar(naviController = naviController) }) { padding ->
+        bottomBar = { NavBottomBar(navController = navController) }) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
             val currentDestination =
-                naviController.currentBackStackEntryAsState().value?.destination
+                navController.currentBackStackEntryAsState().value?.destination
             val currentTopLevelDestination = when (currentDestination?.route) {
                 TopLevelDestination.Home.route -> TopLevelDestination.Home
                 TopLevelDestination.ShoppingCart.route -> TopLevelDestination.ShoppingCart
@@ -139,24 +162,26 @@ fun naviLayout(naviController: NavHostController) {
                 CenterAlignedTopAppBar(
                     title = { Text(text = currentTopLevelDestination.titleTextId) },
                     navigationIcon = {
-                        IconButton(onClick = { /*TODO*/ }) {
+                        IconButton(onClick = { navController.navigateToSearch() }) {
                             Icon(imageVector = Icons.Outlined.Search, contentDescription = null)
                         }
                     },
                     actions = {
-                        IconButton(onClick = { /*TODO*/ }) {
+                        IconButton(onClick = { navController.navigateToSettings() }) {
                             Icon(imageVector = Icons.Outlined.Settings, contentDescription = null)
                         }
                     }
                 )
             }
             NavHost(
-                navController = naviController,
+                navController = navController,
                 startDestination = TopLevelDestination.Home.route
             ) {
                 homeScreen()
                 shoppingCartScreen()
                 personScreen()
+                searchScreen()
+                settingsScreen()
             }
 
         }
@@ -166,16 +191,15 @@ fun naviLayout(naviController: NavHostController) {
 }
 
 @Composable
-//@Preview
-fun naviBottomBar(naviController: NavHostController) {
+fun NavBottomBar(navController: NavHostController) {
     NavigationBar(modifier = Modifier) {
         val destinations = TopLevelDestination.entries
         destinations.forEach { destination ->
             val selected =
-                naviController.currentBackStackEntryAsState().value?.destination?.route == destination.route
+                navController.currentBackStackEntryAsState().value?.destination?.route == destination.route
             NavigationBarItem(
                 selected = selected,
-                onClick = { navigateToTopLevelDestination(naviController, destination) },
+                onClick = { navigateToTopLevelDestination(navController, destination) },
                 icon = {
                     Icon(
                         imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
@@ -184,7 +208,6 @@ fun naviBottomBar(naviController: NavHostController) {
                 },
                 label = { Text(text = destination.iconTextId) }
             )
-
         }
     }
 }
