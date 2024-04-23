@@ -24,14 +24,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.get
 import androidx.navigation.navOptions
+import com.example.composenavsample.home.homeScreen
+import com.example.composenavsample.home.navigateToHome
+import com.example.composenavsample.login.hasLogin
+import com.example.composenavsample.login.loginScreen
+import com.example.composenavsample.person.navigateToPerson
+import com.example.composenavsample.person.personScreen
+import com.example.composenavsample.search.navigateToSearch
+import com.example.composenavsample.search.searchScreen
+import com.example.composenavsample.settings.navigateToSettings
+import com.example.composenavsample.settings.settingsScreen
+import com.example.composenavsample.shopping.navigateToShoppingCart
+import com.example.composenavsample.shopping.shoppingCartScreen
 
 enum class TopLevelDestination(
     val selectedIcon: ImageVector,
@@ -66,62 +75,18 @@ enum class TopLevelDestination(
 enum class OtherDestination(val route: String) {
     Search(route = "Search"),
     Settings(route = "Settings"),
-}
-
-fun NavController.navigateToHome(navOptions: NavOptions) =
-    navigate(TopLevelDestination.Home.route, navOptions)
-
-fun NavController.navigateToShoppingCart(navOptions: NavOptions) =
-    navigate(TopLevelDestination.ShoppingCart.route, navOptions)
-
-fun NavController.navigateToPerson(navOptions: NavOptions) =
-    navigate(TopLevelDestination.Person.route, navOptions)
-
-fun NavController.navigateToSearch() =
-    navigate(OtherDestination.Search.route)
-
-fun NavController.navigateToSettings() =
-    navigate(OtherDestination.Settings.route)
-
-fun NavGraphBuilder.homeScreen() {
-    composable(route = TopLevelDestination.Home.route) {
-        Greeting(name = "Home")
-    }
-}
-
-fun NavGraphBuilder.shoppingCartScreen() {
-    composable(route = TopLevelDestination.ShoppingCart.route) {
-        Greeting(name = "ShoppingCart")
-    }
-}
-
-fun NavGraphBuilder.personScreen() {
-    composable(route = TopLevelDestination.Person.route) {
-        Greeting(name = "Person")
-    }
-}
-
-fun NavGraphBuilder.searchScreen() {
-    composable(route = OtherDestination.Search.route) {
-        Greeting(name = "Search")
-    }
-}
-
-fun NavGraphBuilder.settingsScreen() {
-    composable(route = OtherDestination.Settings.route) {
-        Greeting(name = "Settings")
-    }
+    Login(route = "Login"),
 }
 
 fun navigateToTopLevelDestination(
-    navController: NavHostController,
+    navController: NavController,
     topLevelDestination: TopLevelDestination
 ) {
     val topLevelNavOptions = navOptions {
         // Pop up to the start destination of the graph to
         // avoid building up a large stack of destinations
         // on the back stack as users select items
-        popUpTo(navController.graph.findStartDestination().id) {
+        popUpTo(navController.graph.get(TopLevelDestination.Home.route).id) {
             saveState = true
         }
         // Avoid multiple copies of the same destination when
@@ -138,13 +103,16 @@ fun navigateToTopLevelDestination(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavLayout(navController: NavHostController) {
     Scaffold(
         modifier = Modifier,
-        bottomBar = { NavBottomBar(navController = navController) }) { padding ->
+        bottomBar = {
+            if (navController.currentBackStackEntryAsState().value?.destination?.route in TopLevelDestination.entries.map { it.route }) {
+                NavBottomBar(navController = navController)
+            }
+        }) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -175,8 +143,11 @@ fun NavLayout(navController: NavHostController) {
             }
             NavHost(
                 navController = navController,
-                startDestination = TopLevelDestination.Home.route
+                startDestination = if (hasLogin) TopLevelDestination.Home.route else OtherDestination.Login.route
             ) {
+                if (!hasLogin) {
+                    loginScreen(navController)
+                }
                 homeScreen()
                 shoppingCartScreen()
                 personScreen()
